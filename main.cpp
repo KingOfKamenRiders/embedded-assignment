@@ -74,7 +74,7 @@ int main(){
 
 	double dWidth=capture.get(CV_CAP_PROP_FRAME_WIDTH);			//the width of frames of the video
 	double dHeight=capture.get(CV_CAP_PROP_FRAME_HEIGHT);		//the height of frames of the video
-	//clog<<"Frame Size: "<<dWidth<<"x"<<dHeight<<endl;
+	clog<<"Frame Size: "<<dWidth<<"x"<<dHeight<<endl;
 
 	Mat image;
 	
@@ -91,22 +91,25 @@ int main(){
 		imshow("myframe",imgROI);
 		Mat imgROI_Gray,imgROI_Bin,imgROI_Dilation,imgROI_Erosion;
 		Mat imgROI_Perspective = Mat::zeros( 160,640, CV_8UC3);
-		 Mat element = getStructuringElement(MORPH_RECT, Size(5, 5));
+		 Mat element = getStructuringElement(MORPH_RECT, Size(2, 2));
 		cvtColor(imgROI, imgROI_Gray,CV_RGB2GRAY);
-		threshold(imgROI_Gray, imgROI_Bin, 100, 200.0, CV_THRESH_BINARY);
+		threshold(imgROI_Gray, imgROI_Bin, 150, 200.0, CV_THRESH_BINARY);
 		dilate(imgROI_Bin,imgROI_Dilation,element);
 		erode( imgROI_Dilation, imgROI_Erosion,element);
-		
+
+		//fanzhuan
 		for(int i =0 ;i<imgROI_Erosion.rows;i++){
 			for(int j=0;j<imgROI_Erosion.cols*imgROI_Erosion.channels();j++){
 				imgROI_Erosion.at<uchar>(i, j)= 255- imgROI_Erosion.at<uchar>(i, j);
 			}
 		}
+
 		//tou shi bian huan
 		//Point2f srcFixed[] = {Point2f(5,100), Point2f(5,540),Point2f(160,5),Point2f(160,640)};
 		//Point2f dstFixed[] = { Point2f(5,5),  Point2f(5,640),Point2f(160,5),Point2f(160,640)};
 		//Mat M = getPerspectiveTransform(srcFixed, dstFixed);
 		//warpPerspective(imgROI_Erosion, imgROI_Perspective, M, imgROI_Perspective.size());
+
 		//Canny algorithm
 		Mat contours;
 		Canny(imgROI_Erosion,contours,CANNY_LOWER_BOUND,CANNY_UPPER_BOUND);
@@ -114,7 +117,7 @@ int main(){
 		imshow(CANNY_WINDOW_NAME,contours);
 		#endif
 
-		vector<Vec2f> lines;
+		vector<Vec2f> lines,filtered_lines;
 		HoughLines(contours,lines,1,PI/90,HOUGH_THRESHOLD);
 		Mat result(imgROI.size(),CV_8U,Scalar(255));
 		imgROI.copyTo(result);
@@ -132,6 +135,7 @@ int main(){
 			//and atan(0.09) equals about 5 degrees.
 			if((theta>0.09&&theta<1.48)||(theta>1.62&&theta<3.05))
 			{
+				filtered_lines.push_back(*it);
 				if(theta>maxRad)
 					maxRad=theta;
 				if(theta<minRad)
@@ -154,7 +158,7 @@ int main(){
 
 		#ifdef _DEBUG
 		stringstream overlayedText;
-		overlayedText<<"Lines: "<<lines.size();
+		overlayedText<<"Lines: "<<filtered_lines.size();
 		putText(result,overlayedText.str(),Point(10,result.rows-10),2,0.8,Scalar(0,0,255),0);
 		imshow(MAIN_WINDOW_NAME,result);
 		#endif
