@@ -118,7 +118,7 @@ int main(){
 		#endif
 
 		vector<Vec2f> lines,filtered_lines;
-		HoughLines(contours,lines,1,PI/90,HOUGH_THRESHOLD);
+		HoughLines(contours,lines,1,PI/180,HOUGH_THRESHOLD);
 		Mat result(imgROI.size(),CV_8U,Scalar(255));
 		imgROI.copyTo(result);
 		//clog<<lines.size()<<endl;
