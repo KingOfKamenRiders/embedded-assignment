@@ -16,7 +16,7 @@ const int HOUGH_THRESHOLD=100;
 
 
 int main(){
-	Mat image = imread("image_124.jpg",IMREAD_COLOR);
+	Mat image = imread("image_272.jpg",IMREAD_COLOR);
 	Rect roi(0,image.rows/3,image.cols,image.rows/3);
 	Mat imgROI=image(roi);
 	Mat imgROI_Gray,imgROI_Bin,imgROI_Dilation,imgROI_Erosion;
@@ -67,6 +67,8 @@ int main(){
 	}
 	clog<<"leftIndex: "<<leftIndex<<" rightIndex: "<<rightIndex<<endl;
 	//point of intersection of the line with first row
+	if(maxLr==0||maxRr==-999)
+		return 0;
 	double rho1 = lines[leftIndex][0],theta1 = lines[leftIndex][1];
 	double rho2 = lines[rightIndex][0],theta2 = lines[rightIndex][1];
 	clog << rho1 <<" "<<theta1<<endl;
@@ -81,6 +83,9 @@ int main(){
 	//point of intersection of the line with last row
 	Point pt4((rho2-result.rows*sin(theta2))/cos(theta2),result.rows);
 	line(result,pt3,pt4,Scalar(0,0,255),3,CV_AA);
+	double x = (rho1*sin(theta2)-rho2*sin(theta1))/sin(theta2-theta1);
+	double y = (rho1*cos(theta2)-rho2*cos(theta1))/sin(theta1-theta2);
+	clog<<"x: "<<x<<" y: "<<y<<endl;
 	
 	
 	stringstream overlayedText;
