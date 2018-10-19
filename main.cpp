@@ -74,7 +74,8 @@ int main(){
 		
 	gettimeofday(&now, NULL);
 	TV nexttime = now;
-	nexttime.tv_sec++;	
+	nexttime.tv_sec++;
+	init();	
 	turnTo(0);
 	
 	VideoCapture capture(CAM_PATH);
@@ -92,14 +93,16 @@ int main(){
 	
 	while(1){
 		capture>>image;
+		
 		if(image.empty()){
 			clog<<"empty image"<<endl;
 			break;
 		}
 		//Set the ROI for the image
-		Rect roi(0,image.rows/3*2,image.cols,image.rows/3);
+		Rect roi(0,image.rows/3,image.cols,image.rows/3);
 
 		Mat imgROI=image(roi);
+		
 		Mat imgROI_Gray,imgROI_Bin,imgROI_Dilation,imgROI_Erosion;
 		Mat imgROI_Perspective = Mat::zeros( 160,640, CV_8UC3);
 		 Mat element = getStructuringElement(MORPH_RECT, Size(2, 2));
