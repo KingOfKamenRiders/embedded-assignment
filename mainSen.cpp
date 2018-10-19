@@ -19,14 +19,14 @@ using namespace GPIO;
 const string CAM_PATH="/dev/video0";
 const string MAIN_WINDOW_NAME="Processed Image";
 const string CANNY_WINDOW_NAME="Canny";
-
 const int CANNY_LOWER_BOUND=50;
 const int CANNY_UPPER_BOUND=250;
 const int HOUGH_THRESHOLD=150;
+const int BIN_THRESHOLD = 150;
 
 const int MAINTAIN = 20;
 const float COE = -3;
-const int STEP = 5;
+const int STEP = 3;
 struct Pid {
 	float setAng;
 	float actAng;
@@ -71,6 +71,21 @@ int main()
 		//Set the ROI for the image
 		Rect roi(0,image.rows/3,image.cols,image.rows/3);
 		Mat imgROI=image(roi);
+///-------------------------------
+		Mat imgROI_Gray,imgROI_Bin,imgROI_Dilation,imgROI_Erosion;
+		Mat imgROI_Perspective = Mat::zeros( 160,640, CV_8UC3);
+		Mat element = getStructuringElement(MORPH_RECT, Size(2, 2));
+		cvtColor(imgROI, imgROI_Gray,CV_RGB2GRAY);
+		threshold(imgROI_Gray, imgROI_Bin, BIN_THRESHOLD, 200.0, CV_THRESH_BINARY);
+		dilate(imgROI_Bin,imgROI_Dilation,element);
+		erode( imgROI_Dilation, imgROI_Erosion,element);
+	//fanzhuan
+		for(int i =0 ;i<imgROI_Erosion.rows;i++){
+			for(int j=0;j<imgROI_Erosion.cols*imgROI_Erosion.channels();j++){
+				imgROI_Erosion.at<uchar>(i, j)= 255- imgROI_Erosion.at<uchar>(i, j);
+			}
+		}
+///--------------------------------------------
 
 		//Canny algorithm
 		Mat contours;
@@ -88,15 +103,15 @@ int main()
 		float maxRad=-2*PI;
 		float minRad=2*PI;
 		//Draw the lines and judge the slope
-		
+///-----		------------------------------
+		int maxLr = 0,leftIndex=0;
+    		int maxRr = -999,rightIndex=0; 
+///--------------------------------------
+
 		float rho1 = 0;
 		float rho2 = 0;
 		float theta1 = 0;
 		float theta2 = 0;
-		int maxroh1 = 0;
-		int minrho2 = 0;
-		int index1 = 0;
-		int index2 = 0;
 		for(vector<Vec2f>::const_iterator it=lines.begin();it!=lines.end();++it)
 		{
 			float rho=(*it)[0];			//First element is distance rho
@@ -104,25 +119,37 @@ int main()
 
 			//Filter to remove vertical and horizontal lines,
 			//and atan(0.09) equals about 5 degrees.
-			if(rho<0&&theta>1.62&&theta<3.05) {
-			/*
-				theta2 = theta;
-				rho2 = rho;
-			*/
-				if(rho<rho2) {
-					theta2 = theta;
-					rho2 = rho;
+///---------------------------------------------------------
+		//Filter to remove vertical and horizontal lines,
+			//and atan(0.09) equals about 5 degrees.
+			if(rho>0){
+				if(rho>maxLr){
+					leftIndex = it-lines.begin();
+					maxLr = rho;
+				}
+			}else if(rho < 0){
+				if(rho > maxRr){
+					rightIndex = it-lines.begin();
+					maxRr = rho;
 				}
 			}
-			if(rho>0&&theta>0.09&&theta<1.48) {
+			#ifdef _DEBUG
+			clog<<"Line: ("<<rho<<","<<theta<<")\n";
+			#endif
+}
+///--------------------------------------------------------
+
+//---------------------------------------------------------------------------------------------------
 /*
+			if(rho<0&&theta>1.62&&theta<3.05) {
+				theta2 = theta;
+				rho2 = rho;
+			}
+			if(rho>0&&theta>0.09&&theta<1.48) {
 				theta1 = theta;
 				rho1 = rho;
-*/				if(rho>rho1) {
-					theta1 = theta;
-					rho1 = rho;
-				}			
 			}
+
 			if((theta>0.09&&theta<1.48)||(theta>1.62&&theta<3.05))
 			{
 				if(theta>maxRad)
@@ -144,6 +171,37 @@ int main()
 			clog<<"Line: ("<<rho<<","<<theta<<")\n";
 			#endif
 		}
+*/
+//----------------------------------------------------------------------------------------------
+if(maxLr>0&&maxRr>-999){
+			rho1 = lines[leftIndex][0],theta1 = lines[leftIndex][1];
+			rho2 = lines[rightIndex][0],theta2 = lines[rightIndex][1];
+			clog << rho1 <<" "<<theta1<<endl;
+			clog<<rho2<<" "<<theta2<<endl;
+			Point pt1(rho1/cos(theta1),0);
+			//point of intersection of the line with last row
+			Point pt2((rho1-result.rows*sin(theta1))/cos(theta1),result.rows);
+			//Draw a line
+			line(result,pt1,pt2,Scalar(0,255,255),3,CV_AA);
+	
+			Point pt3(rho2/cos(theta2),0);
+			//point of intersection of the line with last row
+			Point pt4((rho2-result.rows*sin(theta2))/cos(theta2),result.rows);
+			line(result,pt3,pt4,Scalar(0,0,255),3,CV_AA);
+			/*
+			double x = (rho1*sin(theta2)-rho2*sin(theta1))/sin(theta2-theta1);
+			double y = (rho1*cos(theta2)-rho2*cos(theta1))/sin(theta1-theta2);
+			error_x = result.cols/2 - x;
+			clog<<"x: "<<x<<" y: "<<y<<endl;
+			*/
+			#ifdef _DEBUG
+			stringstream overlayedText;
+			//overlayedText<<"Lines: "<<filtered_lines.size();
+			putText(result,overlayedText.str(),Point(10,result.rows-10),2,0.8,Scalar(0,0,255),0);
+			imshow(MAIN_WINDOW_NAME,result);
+			#endif
+		}
+//---------------------------------------------------------------------------
 
 		#ifdef _DEBUG
 		/*
@@ -158,7 +216,7 @@ int main()
 		pid.err = dis;
 		pid.actAng = dis;
 		
-		float changeAngle = pid.kp*(pid.err-pid.err_last)+pid.ki*(pid.err)+kd*(pid.err-2*pid.err_last+pid.err_pre);
+		float changeAngle = pid.kp*(pid.err-pid.err_last)+pid.ki*(pid.err)+pid.kd*(pid.err-2*pid.err_last+pid.err_pre);
 		pid.actAng += changeAngle*COE;
 		*/
 		//求出交点坐标偏移角
