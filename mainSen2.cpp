@@ -26,7 +26,7 @@ const int HOUGH_THRESHOLD=150;
 
 const int MAINTAIN = 20;
 const float COE = -3;
-const int STEP = 5;
+const int STEP = 8;
 struct Pid {
 	float setAng;
 	float actAng;
@@ -42,7 +42,7 @@ void pid_init() {
 	pid.err_last = 0.0;
 	pid.err_pre = 0.0;
 	pid.kp = 1;
-	pid.ki = 0.015;
+	pid.ki = 0.2;
 	pid.kd = 0.2;
 }
 int main()
@@ -65,6 +65,7 @@ int main()
 	{
 		capture>>image;
 		int mid = image.cols/2;
+		int y_length = image.rows/3;
 		if(image.empty())
 			break;
 
@@ -114,7 +115,7 @@ int main()
 					rho2 = rho;
 				}
 			}
-			if(rho>0&&theta>0.09&&theta<1.48) {
+			if(rho>0&&theta>0.08&&theta<1.47) {
 /*
 				theta1 = theta;
 				rho1 = rho;
@@ -168,11 +169,11 @@ int main()
 		if(theta1!=0&&theta2!=0) {
 			x = (rho1/sin(theta1)-rho2/sin(theta2))/(cos(theta1)/sin(theta1)+cos(theta2)/sin(theta2));
 			y = x*cos(theta2)/sin(theta2)+rho2/sin(theta2);
-			ta = (mid-x)/y;  //y是负数
+			ta = (x-mid)/(y_length-y);  //x-mid control neg or not
 		}
 		float degree = atan(ta);
-		if(rho1!=0&&rho2==0) {degree = 10;}
-		if(rho2!=0&&rho1==0)  {degree = -10;}
+		if(rho1!=0&&rho2==0) {degree = 14;}
+		if(rho2!=0&&rho1==0)  {degree = -14;}
 		clog<<"rho1 rho2 "<<rho1<<"  "<<rho2<<"degree:"<<degree<<endl;
 		pid.err_pre = pid.err_last;
 		pid.err_last = pid.err;

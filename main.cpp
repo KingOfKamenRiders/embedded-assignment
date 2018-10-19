@@ -145,7 +145,7 @@ int main(){
 
 			//Filter to remove vertical and horizontal lines,
 			//and atan(0.09) equals about 5 degrees.
-			if(rho>0 && theta < 1.6){
+			if(rho>0 && theta < 1.3){
 				if(rho>maxLr){
 					leftIndex = it-lines.begin();
 					maxLr = rho;
@@ -160,16 +160,24 @@ int main(){
 			clog<<"Line: ("<<rho<<","<<theta<<")\n";
 			#endif
 		}
-		if(maxLr>0&&maxRr>-999){
-			double rho1 = lines[leftIndex][0],theta1 = lines[leftIndex][1];
-			double rho2 = lines[rightIndex][0],theta2 = lines[rightIndex][1];
-			clog << rho1 <<" "<<theta1<<endl;
-			clog<<rho2<<" "<<theta2<<endl;
+		double rho1,rho2,theta1, theta2;
+		if(maxLr>0){
+			rho1 = lines[leftIndex][0],theta1 = lines[leftIndex][1];
 			Point pt1(rho1/cos(theta1),0);
 			//point of intersection of the line with last row
 			Point pt2((rho1-result.rows*sin(theta1))/cos(theta1),result.rows);
 			//Draw a line
 			line(result,pt1,pt2,Scalar(0,255,255),3,CV_AA);
+
+		}
+		if(maxRr>-999){
+}
+		if(maxLr>0&&maxRr>-999){
+			
+			double rho2 = lines[rightIndex][0],theta2 = lines[rightIndex][1];
+			clog << rho1 <<" "<<theta1<<endl;
+			clog<<rho2<<" "<<theta2<<endl;
+			
 	
 			Point pt3(rho2/cos(theta2),0);
 			//point of intersection of the line with last row
