@@ -41,7 +41,7 @@ void pid_init() {
 	pid.err = 0.0;
 	pid.err_last = 0.0;
 	pid.err_pre = 0.0;
-	pid.kp = 0.2;
+	pid.kp = 1;
 	pid.ki = 0.015;
 	pid.kd = 0.2;
 }
@@ -145,7 +145,7 @@ int main()
 			#endif
 		}
 
-		#ifdef _DEBUG
+		
 		/*
 		//中点离左边直线距离,正表示中点在其右边，反之。
 		float dis1 = (mid*cos(theta1)-rho1);
@@ -171,10 +171,14 @@ int main()
 			ta = (mid-x)/y;  //y是负数
 		}
 		float degree = atan(ta);
+		if(rho1!=0&&rho2==0) {degree = 10;}
+		if(rho2!=0&&rho1==0)  {degree = -10;}
+		clog<<"rho1 rho2 "<<rho1<<"  "<<rho2<<"degree:"<<degree<<endl;
 		pid.err_pre = pid.err_last;
 		pid.err_last = pid.err;
 		pid.err = degree;
 		float changeAngle = pid.kp*(pid.err-pid.err_last)+pid.ki*(pid.err)+pid.kd*(pid.err-2*pid.err_last+pid.err_pre);
+		clog<<"last ang:"<<pid.actAng<<" changeAng:"<<changeAngle<<endl;
 		pid.actAng += changeAngle;
 		turnTo(pid.actAng);
 		controlLeft(FORWARD,STEP);
@@ -184,7 +188,7 @@ int main()
 		overlayedText<<"Lines: "<<lines.size();
 		putText(result,overlayedText.str(),Point(10,result.rows-10),2,0.8,Scalar(0,0,255),0);
 		imshow(MAIN_WINDOW_NAME,result);
-		#endif
+		
 
 		lines.clear();
 		waitKey(1);

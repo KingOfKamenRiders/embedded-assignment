@@ -26,8 +26,8 @@ const string CANNY_WINDOW_NAME="Canny";
 
 const int CANNY_LOWER_BOUND=50;
 const int CANNY_UPPER_BOUND=250;
-const int HOUGH_THRESHOLD=150;
-const int BIN_THRESHOLD = 150;
+const int HOUGH_THRESHOLD=100;
+const int BIN_THRESHOLD = 100;
 const double KP = .05,KI = 1, KD = .1;
 double error_x = 0 ,last_error_x = 0;
 typedef struct timeval TV;
@@ -102,7 +102,9 @@ int main(){
 		Rect roi(0,image.rows/3,image.cols,image.rows/3);
 
 		Mat imgROI=image(roi);
-		
+		#ifdef _DEBUG
+		imshow("ROI",imgROI);
+		#endif
 		Mat imgROI_Gray,imgROI_Bin,imgROI_Dilation,imgROI_Erosion;
 		Mat imgROI_Perspective = Mat::zeros( 160,640, CV_8UC3);
 		 Mat element = getStructuringElement(MORPH_RECT, Size(2, 2));
@@ -143,7 +145,7 @@ int main(){
 
 			//Filter to remove vertical and horizontal lines,
 			//and atan(0.09) equals about 5 degrees.
-			if(rho>0){
+			if(rho>0 && theta < 1.6){
 				if(rho>maxLr){
 					leftIndex = it-lines.begin();
 					maxLr = rho;
@@ -185,13 +187,25 @@ int main(){
 			putText(result,overlayedText.str(),Point(10,result.rows-10),2,0.8,Scalar(0,0,255),0);
 			imshow(MAIN_WINDOW_NAME,result);
 			#endif
+			controlLeft(FORWARD,4);
+			controlRight(FORWARD,4);
+			//PD control
+			double degree = 0;
+			degree = KP * error_x + KD * (error_x - last_error_x);
+			last_error_x = error_x;
+			turnTo(degree);
 		}
-		controlLeft(FORWARD,3);
-		controlRight(FORWARD,3);
+		
 		lines.clear();
 		gettimeofday(&now, NULL);
 		if(now.tv_sec == nexttime.tv_sec){
-			printf("to wake thread1 up \n");
+			clog<<"to PD controll";		
+			//PD control
+			double degree = 0;
+			degree = KP * error_x + KD * (error_x - last_error_x);
+			last_error_x = error_x;
+			turnTo(degree);
+
 			pthread_cond_signal(&cond);
 			gettimeofday(&now, NULL);
 			nexttime = now;
