@@ -22,11 +22,14 @@ const string CANNY_WINDOW_NAME="Canny";
 
 const int CANNY_LOWER_BOUND=50;
 const int CANNY_UPPER_BOUND=250;
-const int HOUGH_THRESHOLD=150;
+const int HOUGH_THRESHOLD=100;
+const int BIN_THRESHOLD=120;
 
 const int MAINTAIN = 20;
 const float COE = -3;
 const int STEP = 8;
+
+int hCount = 0;
 struct Pid {
 	float setAng;
 	float actAng;
@@ -72,10 +75,25 @@ int main()
 		//Set the ROI for the image
 		Rect roi(0,image.rows/3,image.cols,image.rows/3);
 		Mat imgROI=image(roi);
+		///-------------------------------
+		Mat imgROI_Gray,imgROI_Bin,imgROI_Dilation,imgROI_Erosion;
+		Mat imgROI_Perspective = Mat::zeros( 160,640, CV_8UC3);
+		Mat element = getStructuringElement(MORPH_RECT, Size(2, 2));
+		cvtColor(imgROI, imgROI_Gray,CV_RGB2GRAY);
+		threshold(imgROI_Gray, imgROI_Bin, BIN_THRESHOLD, 200.0, CV_THRESH_BINARY);
+		dilate(imgROI_Bin,imgROI_Dilation,element);
+		erode( imgROI_Dilation, imgROI_Erosion,element);
+	//fanzhuan
+		for(int i =0 ;i<imgROI_Erosion.rows;i++){
+			for(int j=0;j<imgROI_Erosion.cols*imgROI_Erosion.channels();j++){
+				imgROI_Erosion.at<uchar>(i, j)= 255- imgROI_Erosion.at<uchar>(i, j);
+			}
+		}
+///--------------------------------------------
 
 		//Canny algorithm
 		Mat contours;
-		Canny(imgROI,contours,CANNY_LOWER_BOUND,CANNY_UPPER_BOUND);
+		Canny(imgROI_Erosion,contours,CANNY_LOWER_BOUND,CANNY_UPPER_BOUND);
 		#ifdef _DEBUG
 		imshow(CANNY_WINDOW_NAME,contours);
 		#endif
@@ -98,6 +116,7 @@ int main()
 		int minrho2 = 0;
 		int index1 = 0;
 		int index2 = 0;
+		int countH = 0;
 		for(vector<Vec2f>::const_iterator it=lines.begin();it!=lines.end();++it)
 		{
 			float rho=(*it)[0];			//First element is distance rho
@@ -125,12 +144,7 @@ int main()
 				}			
 			}
 			if((theta>0.09&&theta<1.48)||(theta>1.62&&theta<3.05))
-			{
-				if(theta>maxRad)
-					maxRad=theta;
-				if(theta<minRad)
-					minRad=theta;
-				
+			{	
 				#ifdef _DEBUG
 				//point of intersection of the line with first row
 				Point pt1(rho/cos(theta),0);
@@ -144,6 +158,20 @@ int main()
 			#ifdef _DEBUG
 			clog<<"Line: ("<<rho<<","<<theta<<")\n";
 			#endif
+			//Logan's try to auto-stop
+			//80 degree to 100 degree
+			if (theta>=1.4&&theta<=1.74)
+			{
+				hCount++;
+			}
+		}
+		if(countH>0){
+			hCount ++ ;
+			if(hCount>50){
+				goto halt;
+			}
+		}else{
+			hCount = 0;
 		}
 
 		
@@ -194,5 +222,10 @@ int main()
 		lines.clear();
 		waitKey(1);
 	}
+
+	halt:
+	clog<<"I think it's time to cease!";
+	controlLeft(FORWARD,STEP*2);
+	controlRight(FORWARD,STEP*2);
 	return 0;
 }
