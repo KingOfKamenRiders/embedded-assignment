@@ -29,7 +29,7 @@ const int MAINTAIN = 20;
 const float COE = -3;
 const int STEP = 7;
 
-int hCount = 0;
+int hCount = 0,maxCount = 0;
 struct Pid {
 	float setAng;
 	float actAng;
@@ -168,9 +168,11 @@ int main()
 		if(countH>0){
 			hCount ++ ;
 			cout<<"hcount:"<<hCount<<endl;
-			if(hCount>=12){
-				goto halt;
-			}
+			if(hCount>maxCount)maxCount = hCount;
+			cout<<"maxCount:"<<maxCount<<endl;
+			//if(hCount>=22){
+			//	goto halt;
+			//}
 		}else{
 			hCount = 0;
 		}
@@ -201,7 +203,7 @@ int main()
 			ta = (x-mid)/(y_length-y);  //x-mid control neg or not
 		}
 		float degree = atan(ta);
-		if(rho1!=0&&rho2==0) {degree = 12;}
+		if(rho1!=0&&rho2==0) {degree = 14;}
 		if(rho2!=0&&rho1==0)  {degree = -12	;}
 		clog<<"rho1 rho2 "<<rho1<<"  "<<rho2<<"degree:"<<degree<<endl;
 		pid.err_pre = pid.err_last;
