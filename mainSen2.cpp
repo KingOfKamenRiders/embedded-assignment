@@ -27,7 +27,7 @@ const int BIN_THRESHOLD=120;
 
 const int MAINTAIN = 20;
 const float COE = -3;
-const int STEP = 8;
+const int STEP = 7;
 
 int hCount = 0;
 struct Pid {
@@ -44,8 +44,8 @@ void pid_init() {
 	pid.err = 0.0;
 	pid.err_last = 0.0;
 	pid.err_pre = 0.0;
-	pid.kp = 1;
-	pid.ki = 0.2;
+	pid.kp = 0.95;
+	pid.ki = 0.025;
 	pid.kd = 0.2;
 }
 int main()
@@ -162,12 +162,13 @@ int main()
 			//80 degree to 100 degree
 			if (theta>=1.4&&theta<=1.74)
 			{
-				hCount++;
+				countH++;
 			}
 		}
 		if(countH>0){
 			hCount ++ ;
-			if(hCount>50){
+			cout<<"hcount:"<<hCount<<endl;
+			if(hCount>=12){
 				goto halt;
 			}
 		}else{
@@ -200,8 +201,8 @@ int main()
 			ta = (x-mid)/(y_length-y);  //x-mid control neg or not
 		}
 		float degree = atan(ta);
-		if(rho1!=0&&rho2==0) {degree = 14;}
-		if(rho2!=0&&rho1==0)  {degree = -14;}
+		if(rho1!=0&&rho2==0) {degree = 12;}
+		if(rho2!=0&&rho1==0)  {degree = -12	;}
 		clog<<"rho1 rho2 "<<rho1<<"  "<<rho2<<"degree:"<<degree<<endl;
 		pid.err_pre = pid.err_last;
 		pid.err_last = pid.err;
@@ -225,7 +226,9 @@ int main()
 
 	halt:
 	clog<<"I think it's time to cease!";
-	controlLeft(FORWARD,STEP*2);
-	controlRight(FORWARD,STEP*2);
+	delay(2000);
+	stopLeft();
+	stopRight();
+
 	return 0;
 }
