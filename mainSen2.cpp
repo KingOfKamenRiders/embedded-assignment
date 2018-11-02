@@ -22,12 +22,12 @@ const string CANNY_WINDOW_NAME="Canny";
 
 const int CANNY_LOWER_BOUND=50;
 const int CANNY_UPPER_BOUND=250;
-const int HOUGH_THRESHOLD=100;
-const int BIN_THRESHOLD=120;
+const int HOUGH_THRESHOLD=90;
+const int BIN_THRESHOLD=130;
 
 const int MAINTAIN = 20;
 const float COE = -3;
-const int STEP = 7;
+const int STEP = 8;
 
 int hCount = 0,maxCount = 0;
 struct Pid {
@@ -44,7 +44,7 @@ void pid_init() {
 	pid.err = 0.0;
 	pid.err_last = 0.0;
 	pid.err_pre = 0.0;
-	pid.kp = 0.95;
+	pid.kp = 1.0;
 	pid.ki = 0.025;
 	pid.kd = 0.2;
 }
