@@ -29,7 +29,7 @@ const int MAINTAIN = 20;
 const float COE = -3;
 const int STEP = 8;
 
-int hCount = 0,maxCount = 0;
+long long  frames;
 struct Pid {
 	float setAng;
 	float actAng;
@@ -66,7 +66,16 @@ int main()
 	Mat image;
 	while(true)
 	{
+		//-----------------
 		capture>>image;
+		if(frames++<50){
+			continue;
+		}else{
+			frames = 51;
+		}
+
+		//-----------------
+		
 		int mid = image.cols/2;
 		int y_length = image.rows/3;
 		if(image.empty())
@@ -165,17 +174,7 @@ int main()
 				countH++;
 			}
 		}
-		if(countH>0){
-			hCount ++ ;
-			cout<<"hcount:"<<hCount<<endl;
-			if(hCount>maxCount)maxCount = hCount;
-			cout<<"maxCount:"<<maxCount<<endl;
-			//if(hCount>=22){
-			//	goto halt;
-			//}
-		}else{
-			hCount = 0;
-		}
+		
 
 		
 		/*
