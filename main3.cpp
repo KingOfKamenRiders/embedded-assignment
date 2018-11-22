@@ -29,8 +29,50 @@ const int MAINTAIN = 20;
 const float COE = -3;
 const int STEP = 8;
 const int TURNSTEP = 4;
+const int REDTHRESHOLD = 50;
+
+int colorState = 0;
 
 long long  frames;
+void findRed(Mat image)  
+{
+	int rows = image.rows;
+	int halfR = rows/2;
+	int cols = image.cols;
+	int leftC = 0, rightC = 0;
+	cols *=image.channels();
+	uchar* p;
+	for(int i =0;i<rows;i++){
+		p = image.ptr<uchar>(i);
+		for(int j = 0;j<cols;j+=3){
+			if(abs(p[j]-24)<20&&abs(p[j+1]-47)<20&&abs(p[j+2]-157)<20){
+				cout<<"find a pixel"<<endl;
+				p[j] = 0;
+				p[j+1] = 0;
+				p[j+2] = 0;
+				if(j<halfR)
+					leftC++;
+				else
+					rightC++;
+			}
+		}
+	}
+	if(leftC + rightC >REDTHRESHOLD){
+		if(leftC > rightC){
+			colorState = 1;   //左边有物体
+		}else{
+			colorState = 2;   //右边有物体
+		}
+	}
+	else if((leftC + rightC) <REDTHRESHOLD&&(colorState==1||colorState==2)) {
+		colorState = 3;			//之前有物体
+	}
+	else {
+		colorState = 0;
+	}
+	cout<<"transform finished"<<endl;
+	
+}
 struct Pid {
 	float setAng;
 	float actAng;
@@ -85,6 +127,9 @@ int main()
 		//Set the ROI for the image
 		Rect roi(0,image.rows/3,image.cols,image.rows/3);
 		Mat imgROI=image(roi);
+		Mat colorROI = imgROI.clone();
+		findRed(colorROI);
+		imshow("filtered",colorROI);
 		///-------------------------------
 		Mat imgROI_Gray,imgROI_Bin,imgROI_Dilation,imgROI_Erosion;
 		Mat imgROI_Perspective = Mat::zeros( 160,640, CV_8UC3);
@@ -105,7 +150,7 @@ int main()
 		Mat contours;
 		Canny(imgROI_Erosion,contours,CANNY_LOWER_BOUND,CANNY_UPPER_BOUND);
 		#ifdef _DEBUG
-		imshow(CANNY_WINDOW_NAME,contours);
+		//imshow(CANNY_WINDOW_NAME,contours);
 		#endif
 
 		vector<Vec2f> lines;
@@ -193,7 +238,7 @@ int main()
 		pid.actAng += changeAngle*COE;
 		*/
 		//求出交点坐标偏移角
-		if(正常或回到正常) {
+		if(colorState==0) {  //正常
 			float x = 0;
 			float y = 0;
 			float ta = 0;
@@ -216,7 +261,7 @@ int main()
 			controlLeft(FORWARD,STEP);
 			controlRight(FORWARD,STEP);
 		}
-		else if(左边有物体) {
+		else if(colorState = 1) {  //左边有物体
 			float right_x = 0;
 			float x = 0;
 			float degree = 0;
@@ -237,7 +282,7 @@ int main()
 			controlRight(FORWARD,TURNSTEP);			
 			
 		}
-		else if(右边有物体) {
+		else if(colorState==2) {   //右边有物体
 			float left_x = 0;
 			float x = 0;
 			float degree = 0;
@@ -257,8 +302,8 @@ int main()
 			controlLeft(FORWARD,TURNSTEP);
 			controlRight(FORWARD,TURNSTEP);			
 		}
-		else if(回到正常) {
-			turnTo(-2*predegree);
+		else if(colorState==3) {                 //回到正常
+			turnTo(-*predegree);
 			predegree = 0;
 			controlLeft(FORWARD,TURNSTEP);
 			controlRight(FORWARD,TURNSTEP);	
