@@ -27,7 +27,7 @@ const int BIN_THRESHOLD=130;
 
 const int MAINTAIN = 20;
 const float COE = -3;
-const int STEP = 8;
+const int STEP = 5;
 const int TURNSTEP = 4;
 const int REDTHRESHOLD = 50;
 
@@ -46,7 +46,7 @@ void findRed(Mat image)
 		p = image.ptr<uchar>(i);
 		for(int j = 0;j<cols;j+=3){
 			if(abs(p[j]-24)<20&&abs(p[j+1]-47)<20&&abs(p[j+2]-157)<20){
-				cout<<"find a pixel"<<endl;
+				
 				p[j] = 0;
 				p[j+1] = 0;
 				p[j+2] = 0;
@@ -58,10 +58,13 @@ void findRed(Mat image)
 		}
 	}
 	if(leftC + rightC >REDTHRESHOLD){
+		cout<<"find a pixel"<<endl;
 		if(leftC > rightC){
 			colorState = 1;   //左边有物体
+			clog<<"find left"<<endl;
 		}else{
 			colorState = 2;   //右边有物体
+			clog<<"find right"<<endl;
 		}
 	}
 	else if((leftC + rightC) <REDTHRESHOLD&&(colorState==1||colorState==2)) {
@@ -237,7 +240,9 @@ int main()
 		float changeAngle = pid.kp*(pid.err-pid.err_last)+pid.ki*(pid.err)+kd*(pid.err-2*pid.err_last+pid.err_pre);
 		pid.actAng += changeAngle*COE;
 		*/
+		if(rho2==-9999) {rho2=0;}
 		//求出交点坐标偏移角
+		
 		if(colorState==0) {  //正常
 			float x = 0;
 			float y = 0;
@@ -261,7 +266,7 @@ int main()
 			controlLeft(FORWARD,STEP);
 			controlRight(FORWARD,STEP);
 		}
-		else if(colorState = 1) {  //左边有物体
+		else if(colorState == 1) {  //左边有物体
 			float right_x = 0;
 			float x = 0;
 			float degree = 0;
@@ -272,7 +277,9 @@ int main()
 				clog<<"left have bock and turn degree "<<degree<<endl;
 			}
 			else {
-				clog<<"left have bock but not line "<<ebdl;
+				degree = 5;
+				clog<<"left have bock but not line "<<endl;
+			}
 			
 			if(degree>predegree) {
 				predegree = degree;
@@ -288,28 +295,31 @@ int main()
 			float degree = 0;
 			if(theta1!=0) {
 				left_x = rho1/cos(theta1);
-				x = right_x-mid;
+				x = left_x-mid;
 				degree = atan(x/y_length);
 				clog<<"right have bock and turn degree "<<degree<<endl;
 			}
 			else {
+				degree = -15;
 				clog<<"right have bock but not line "<<degree<<endl;
 			}
 			if(degree<predegree) {
 				predegree = degree;
 			}
 			turnTo(degree);
+			clog<<"after right have bock but not line "<<degree<<endl;
 			controlLeft(FORWARD,TURNSTEP);
 			controlRight(FORWARD,TURNSTEP);			
 		}
 		else if(colorState==3) {                 //回到正常
-			turnTo(-*predegree);
+			turnTo(-predegree);
 			predegree = 0;
 			controlLeft(FORWARD,TURNSTEP);
 			controlRight(FORWARD,TURNSTEP);	
 			pid_init();
-			clog<<"return normal state and degree is "<<-predegree<<endl;	
-			while(int i=0;i<100;i++) {}
+			clog<<"return normal state and degree is "<<-predegree<<endl;
+			//int i = 0;	
+			//for(int i=0;i<100;i++) {}
 			clog<<"after back turn"<<endl;
 			turnTo(0);
 		}
