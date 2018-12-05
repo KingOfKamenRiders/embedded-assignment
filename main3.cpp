@@ -27,18 +27,20 @@ const int BIN_THRESHOLD=130;
 
 const int MAINTAIN = 20;
 const float COE = -3;
-const int STEP = 5;
-const int TURNSTEP = 4;
-const int REDTHRESHOLD = 50;
+const int STEP = 8;
+int TURNSTEP = 8;
+int SLOWSTEP = 6;
+const int DEGREEMUL = 4;
+const int REDTHRESHOLD = 200;
 
 int colorState = 0;
 
 long long  frames;
 void findRed(Mat image)  
 {
-	int rows = image.rows;
-	int halfR = rows/2;
 	int cols = image.cols;
+	int halfC = cols/2;
+	int rows = image.rows;
 	int leftC = 0, rightC = 0;
 	cols *=image.channels();
 	uchar* p;
@@ -50,7 +52,7 @@ void findRed(Mat image)
 				p[j] = 0;
 				p[j+1] = 0;
 				p[j+2] = 0;
-				if(j<halfR)
+				if(j<halfC*3)
 					leftC++;
 				else
 					rightC++;
@@ -59,6 +61,7 @@ void findRed(Mat image)
 	}
 	if(leftC + rightC >REDTHRESHOLD){
 		cout<<"find a pixel"<<endl;
+		cout<<"pixels: "<<leftC + rightC<<endl;
 		if(leftC > rightC){
 			colorState = 1;   //左边有物体
 			clog<<"find left"<<endl;
@@ -253,7 +256,7 @@ int main()
 				ta = (x-mid)/(y_length-y);  //x-mid control neg or not
 			}
 			float degree = atan(ta);
-			if(rho1!=0&&rho2==0) {degree = 14;}
+			if(rho1!=0&&rho2==0) {degree = 12;}
 			if(rho2!=0&&rho1==0)  {degree = -12	;}
 			clog<<"rho1 rho2 "<<rho1<<"  "<<rho2<<"degree:"<<degree<<endl;
 			pid.err_pre = pid.err_last;
@@ -273,20 +276,23 @@ int main()
 			if(theta2!=0) {
 				right_x = rho2/cos(theta2);
 				x = right_x-mid;
-				degree = atan(x/y_length);
+				degree = atan(x/y_length)*DEGREEMUL;
 				clog<<"left have bock and turn degree "<<degree<<endl;
+				if(degree>predegree) {
+					predegree = degree;
+				}
 			}
 			else {
-				degree = 5;
+				degree = 12;
 				clog<<"left have bock but not line "<<endl;
+				TURNSTEP = SLOWSTEP;
 			}
 			
-			if(degree>predegree) {
-				predegree = degree;
-			}
+			
 			turnTo(degree);
 			controlLeft(FORWARD,TURNSTEP);
-			controlRight(FORWARD,TURNSTEP);			
+			controlRight(FORWARD,TURNSTEP);	
+			TURNSTEP = STEP;		
 			
 		}
 		else if(colorState==2) {   //右边有物体
@@ -296,20 +302,23 @@ int main()
 			if(theta1!=0) {
 				left_x = rho1/cos(theta1);
 				x = left_x-mid;
-				degree = atan(x/y_length);
+				degree = atan(x/y_length)*DEGREEMUL;
 				clog<<"right have bock and turn degree "<<degree<<endl;
+				if(degree<predegree) {
+					predegree = degree;
+				}
 			}
 			else {
-				degree = -15;
+				degree = -30;
 				clog<<"right have bock but not line "<<degree<<endl;
+				TURNSTEP = SLOWSTEP;
 			}
-			if(degree<predegree) {
-				predegree = degree;
-			}
+	
 			turnTo(degree);
 			clog<<"after right have bock but not line "<<degree<<endl;
 			controlLeft(FORWARD,TURNSTEP);
-			controlRight(FORWARD,TURNSTEP);			
+			controlRight(FORWARD,TURNSTEP);
+			TURNSTEP = STEP;			
 		}
 		else if(colorState==3) {                 //回到正常
 			turnTo(-predegree);
@@ -322,7 +331,9 @@ int main()
 			//for(int i=0;i<100;i++) {}
 			clog<<"after back turn"<<endl;
 			turnTo(0);
+			colorState = 0;
 		}
+		cout<<"color state: "<<colorState<<endl;
 		stringstream overlayedText;
 		overlayedText<<"Lines: "<<lines.size();
 		putText(result,overlayedText.str(),Point(10,result.rows-10),2,0.8,Scalar(0,0,255),0);
