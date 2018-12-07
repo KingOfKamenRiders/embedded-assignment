@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <vector>
-
+#include <deque>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/opencv.hpp>
@@ -34,8 +34,33 @@ const int DEGREEMUL = 4;
 const int REDTHRESHOLD = 200;
 
 int colorState = 0;
+int roadMid = 0;
+deque<int> preState;
+int preStateNum = 10;
 
 long long  frames;
+void addStateInque(int state) {
+	if(preState.size()>=preStateNum) {
+		preState.pop_front();
+	}
+	preState.push_back(state);
+}
+bool isCorrectOfState(int state) {
+	int leftState = 0;
+	int rightState = 0;
+	for(deque<int>::iterator ite=preState.begin();ite!=preState.end();ite++) {
+		if(*ite==1) {
+			leftState++;
+		}
+		else if(*ite==2) {
+			rightState++;
+		}
+	}
+	if(state==1&&rightState>0||state==2&&leftState>0) {
+		return false;
+	}
+	return true;
+}
 void findRed(Mat image)  
 {
 	int cols = image.cols;
@@ -52,7 +77,7 @@ void findRed(Mat image)
 				p[j] = 0;
 				p[j+1] = 0;
 				p[j+2] = 0;
-				if(j<halfC*3)
+				if(j<roadMid*3)
 					leftC++;
 				else
 					rightC++;
@@ -126,6 +151,7 @@ int main()
 		//-----------------
 		
 		int mid = image.cols/2;
+		roadMid = mid;
 		int y_length = image.rows/3;
 		if(image.empty())
 			break;
@@ -134,7 +160,6 @@ int main()
 		Rect roi(0,image.rows/3,image.cols,image.rows/3);
 		Mat imgROI=image(roi);
 		Mat colorROI = imgROI.clone();
-		findRed(colorROI);
 		imshow("filtered",colorROI);
 		///-------------------------------
 		Mat imgROI_Gray,imgROI_Bin,imgROI_Dilation,imgROI_Erosion;
@@ -225,7 +250,7 @@ int main()
 				countH++;
 			}
 		}
-		
+		findRed(colorROI);
 
 		
 		/*
@@ -245,7 +270,7 @@ int main()
 		*/
 		if(rho2==-9999) {rho2=0;}
 		//求出交点坐标偏移角
-		
+		if(theta1!=0&&theta2!=0) {roadMid = (rho1/cos(theta1)+rho2/cos(theta2)}/2;
 		if(colorState==0) {  //正常
 			float x = 0;
 			float y = 0;
@@ -268,8 +293,20 @@ int main()
 			turnTo(pid.actAng);
 			controlLeft(FORWARD,STEP);
 			controlRight(FORWARD,STEP);
+			addStateInque(0);
 		}
 		else if(colorState == 1) {  //左边有物体
+			if(!isCorrectOfState(1)) {
+				clog<<"right have block but see left"<<endl；
+				turnTo(5);
+				controlLeft(BACKWARD,4);
+				controlRight(BACKWARD,4);
+				for(int i=0;i<1000;i++);
+				stopLeft();
+				stopRight();
+				turnTo(0);
+				continue;
+			}
 			float right_x = 0;
 			float x = 0;
 			float degree = 0;
@@ -292,10 +329,22 @@ int main()
 			turnTo(degree);
 			controlLeft(FORWARD,TURNSTEP);
 			controlRight(FORWARD,TURNSTEP);	
-			TURNSTEP = STEP;		
+			TURNSTEP = STEP;	
+			addStateInque(1);
 			
 		}
 		else if(colorState==2) {   //右边有物体
+			if(!isCorrectOfState(2)) {
+				clog<<"left have block but see right"<<endl；
+				turnTo(-5);
+				controlLeft(BACKWARD,4);
+				controlRight(BACKWARD,4);
+				for(int i=0;i<1000;i++);
+				stopLeft();
+				stopRight();
+				turnTo(0);
+				continue;
+			}
 			float left_x = 0;
 			float x = 0;
 			float degree = 0;
@@ -318,7 +367,8 @@ int main()
 			clog<<"after right have bock but not line "<<degree<<endl;
 			controlLeft(FORWARD,TURNSTEP);
 			controlRight(FORWARD,TURNSTEP);
-			TURNSTEP = STEP;			
+			TURNSTEP = STEP;	
+			addStateInque(2);
 		}
 		else if(colorState==3) {                 //回到正常
 			turnTo(-predegree);
@@ -326,11 +376,11 @@ int main()
 			controlLeft(FORWARD,TURNSTEP);
 			controlRight(FORWARD,TURNSTEP);	
 			pid_init();
+			//addStateInque(3);
 			clog<<"return normal state and degree is "<<-predegree<<endl;
 			//int i = 0;	
-			//for(int i=0;i<100;i++) {}
+			for(int i=0;i<1000;i++) {}
 			clog<<"after back turn"<<endl;
-			for(int i =0;i<10000;i++);
 			turnTo(0);
 			colorState = 0;
 		}
