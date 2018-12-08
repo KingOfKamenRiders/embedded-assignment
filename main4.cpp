@@ -301,7 +301,8 @@ int main()
 				turnTo(5);
 				controlLeft(BACKWARD,4);
 				controlRight(BACKWARD,4);
-				for(int i=0;i<1000;i++);
+				//for(int i=0;i<1000;i++);
+				delay(1200);
 				stopLeft();
 				stopRight();
 				turnTo(0);
@@ -320,7 +321,7 @@ int main()
 				}
 			}
 			else {
-				degree = 12;
+				degree = 15;
 				clog<<"left have bock but not line "<<endl;
 				TURNSTEP = SLOWSTEP;
 			}
@@ -339,7 +340,8 @@ int main()
 				turnTo(-5);
 				controlLeft(BACKWARD,4);
 				controlRight(BACKWARD,4);
-				for(int i=0;i<1000;i++);
+				//for(int i=0;i<1000;i++);
+				delay(1200);
 				stopLeft();
 				stopRight();
 				turnTo(0);
@@ -379,7 +381,7 @@ int main()
 			//addStateInque(3);
 			clog<<"return normal state and degree is "<<-predegree<<endl;
 			//int i = 0;	
-			for(int i=0;i<1000;i++) {}
+			//for(int i=0;i<1000;i++) {}
 			clog<<"after back turn"<<endl;
 			turnTo(0);
 			colorState = 0;
